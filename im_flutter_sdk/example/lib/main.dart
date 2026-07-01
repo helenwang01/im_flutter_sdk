@@ -5,7 +5,7 @@ import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 
 import 'websocket_config_page.dart';
 
-var appKey = "easemob-demo#wang";
+var appKey = "100260423254379#wang";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,17 +13,17 @@ void main() async {
 
   EMOptions options = EMOptions.withAppKey(
     appKey,
-    // restServer: "https://a1-hsb.easemob.com",
-    // imPort: 6717,
-    // imServer: "42.193.118.34",
+    restServer: "https://tke-sdb-a1.easemob.com",
+    imPort: 6717,
+    imServer: "tke-sdb-msync-im1.easemob.com",
     // webSocketServer: "im-api-new-hsb.easemob.com",
     // webSocketPort: 80,
     autoLogin: true,
     debugMode: true,
-    enableDNSConfig: true,
-    syncDataWebSocketServer: "140.143.132.6",
-    syncDataWebSocketPort: 8086,
-    enableAutoSyncContacts: false,
+    enableDNSConfig: false,
+    syncDataWebSocketServer: "tke-sdb-fusion.easemob.cmo",
+    syncDataWebSocketPort: 443,
+    enableAutoSyncContacts: true,
     enableUserInfo: true,
     requireAck: true,
   );

@@ -10,7 +10,6 @@ import io.flutter.plugin.common.MethodChannel.Result;
 import com.hyphenate.chat.EMCursorResult;
 import com.hyphenate.chat.EMGroup;
 import com.hyphenate.chat.EMGroupInfo;
-import com.hyphenate.chat.EMGroupMemberInfo;
 import com.hyphenate.chat.EMGroupOptions;
 import com.hyphenate.chat.EMMucSharedFile;
 import com.hyphenate.exceptions.HyphenateException;
@@ -288,7 +287,7 @@ public class GroupManagerWrapper extends Wrapper implements MethodCallHandler {
                 updateObject(GroupHelper.toJson(object));
             }
         };
-        EMClient.getInstance().groupManager().asyncCreateGroup(groupName, avatarUrl, desc, members, inviteReason, options, callBack);
+        EMClient.getInstance().groupManager().asyncCreateGroup(groupName, desc, members, inviteReason, options, callBack);
     }
 
     private void getGroupSpecificationFromServer(JSONObject param, String channelName, Result result)
@@ -1312,7 +1311,6 @@ public class GroupManagerWrapper extends Wrapper implements MethodCallHandler {
                 );
             }
 
-            @Override
             public void onMembersJoined(String groupId, List<String> members) {
                 ListenerHandle.getInstance().addHandle(
                         ()-> {
@@ -1325,7 +1323,6 @@ public class GroupManagerWrapper extends Wrapper implements MethodCallHandler {
                 );
             }
 
-            @Override
             public void onMembersExited(String groupId, List<String> members) {
                 ListenerHandle.getInstance().addHandle(
                         ()-> {
@@ -1365,26 +1362,10 @@ public class GroupManagerWrapper extends Wrapper implements MethodCallHandler {
     }
 
     private void fetchGroupMembersInfo(JSONObject param, String channelName, Result result) throws JSONException{
-        String groupId = param.getString("groupId");
-        int limit = param.getInt("limit");
-        String cursor = param.optString("cursor");
-        EMClient.getInstance().groupManager().asyncFetchGroupMembersInfo(groupId, cursor, limit, new EMValueWrapperCallBack<EMCursorResult<EMGroupMemberInfo>>(result, channelName){
-            @Override
-            public void onSuccess(EMCursorResult<EMGroupMemberInfo> object) {
-                updateObject(CursorResultHelper.toJson(object));
-            }
-        });
+        onError(result, new HyphenateException(1, channelName + " is not supported by Android SDK 4.9.0"));
     }
 
     private void updateGroupAvatar(JSONObject param, String channelName, Result result) throws JSONException{
-        String groupId = param.getString("groupId");
-        String avatarUrl = param.optString("avatarUrl");
-        EMClient.getInstance().groupManager().asyncChangeGroupAvatar(groupId, avatarUrl, new EMWrapperCallBack(result, channelName,  null) {
-            @Override
-            public void onSuccess() {
-                EMGroup group = EMClient.getInstance().groupManager().getGroup(groupId);
-                super.updateObject(GroupHelper.toJson(group));
-            }
-        });
+        onError(result, new HyphenateException(1, channelName + " is not supported by Android SDK 4.9.0"));
     }
 }

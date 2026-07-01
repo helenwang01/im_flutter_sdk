@@ -354,19 +354,19 @@ public class ConversationWrapper extends Wrapper implements MethodCallHandler{
             scope = EMConversation.EMMessageSearchScope.ALL;
         }
 
-        List<String> finalSenders = senders;
+        String keywordSender = sender;
+        if (keywordSender == null && senders.size() == 1) {
+            keywordSender = senders.get(0);
+        }
+        final String finalSender = keywordSender;
         asyncRunnable(()->{
             EMConversation conversation = conversationParams.getConversation();
-            conversation.asyncSearchMsgFromDB(keywords, timestamp, count, finalSenders, direction, scope, new EMValueWrapperCallBack<List<EMMessage>>(result, channelName) {
-                @Override
-                public void onSuccess(List<EMMessage> msgList) {
-                    List<Map> messages = new ArrayList<>();
-                    for(EMMessage msg: msgList) {
-                        messages.add(MessageHelper.toJson(msg));
-                    }
-                    super.updateObject(messages);
-                }
-            });
+            List<EMMessage> msgList = conversation.searchMsgFromDB(keywords, timestamp, count, finalSender, direction, scope);
+            List<Map> messages = new ArrayList<>();
+            for(EMMessage msg: msgList) {
+                messages.add(MessageHelper.toJson(msg));
+            }
+            onSuccess(result, channelName, messages);
         });
     }
 

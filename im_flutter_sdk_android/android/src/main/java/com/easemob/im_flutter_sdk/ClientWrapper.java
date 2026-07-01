@@ -718,15 +718,7 @@ public class ClientWrapper extends Wrapper implements MethodCallHandler {
     }
 
     private void changeAppId(JSONObject param, String channelName, Result result) throws JSONException {
-        String appId = param.getString("appId");
-        asyncRunnable(()-> {
-            try {
-                EMClient.getInstance().changeAppId(appId);
-                onSuccess(result, channelName, true);
-            } catch (HyphenateException e) {
-                onError(result, e);
-            }
-        });
+        onError(result, new HyphenateException(1, channelName + " is not supported by Android SDK 4.9.0"));
     }
 }
 

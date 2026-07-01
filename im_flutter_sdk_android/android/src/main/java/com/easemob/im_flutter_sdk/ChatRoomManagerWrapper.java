@@ -772,19 +772,6 @@ public class ChatRoomManagerWrapper extends Wrapper implements MethodChannel.Met
             }
 
             @Override
-            public void onMuteListAdded(String chatRoomId, Map<String,Long> muteInfo) {
-                ListenerHandle.getInstance().addHandle(
-                        ()-> {
-                            Map<String, Object> data = new HashMap<>();
-                            data.put("roomId", chatRoomId);
-                            data.put("mutes", muteInfo);
-                            data.put("type", "onRoomMuteListAdded");
-                            post(() -> channel.invokeMethod(MethodKey.chatRoomChange, data));
-                        }
-                );
-            }
-
-            @Override
             public void onMuteListRemoved(String chatRoomId, List<String> mutes) {
                 ListenerHandle.getInstance().addHandle(
                         ()-> {

@@ -17,7 +17,6 @@ import com.hyphenate.chat.EMFileMessageBody;
 import com.hyphenate.chat.EMGroup;
 import com.hyphenate.chat.EMGroupInfo;
 import com.hyphenate.chat.EMGroupManager;
-import com.hyphenate.chat.EMGroupMemberInfo;
 import com.hyphenate.chat.EMGroupOptions;
 import com.hyphenate.chat.EMGroupReadAck;
 import com.hyphenate.chat.EMImageMessageBody;
@@ -42,7 +41,6 @@ import com.hyphenate.chat.EMRecallMessageInfo;
 import com.hyphenate.chat.EMSilentModeParam;
 import com.hyphenate.chat.EMSilentModeResult;
 import com.hyphenate.chat.EMSilentModeTime;
-import com.hyphenate.chat.EMStreamChunk;
 import com.hyphenate.chat.EMTextMessageBody;
 import com.hyphenate.chat.EMVideoMessageBody;
 import com.hyphenate.chat.EMVoiceMessageBody;
@@ -67,11 +65,7 @@ class OptionsHelper {
         EMOptions options = new EMOptions();
         if(json.has("appKey")) {
             options.setAppKey(json.getString("appKey"));
-        }else {
-            options.setAppId(json.optString("appId"));
         }
-
-        options.setSDKPlatform(EMOptions.EMSDKPlatform.EMSDKPlatformFlutter);
 
         options.setAutoLogin(json.getBoolean("autoLogin"));
         options.setRequireAck(json.getBoolean("requireAck"));
@@ -87,9 +81,7 @@ class OptionsHelper {
         options.setAreaCode(json.getInt("areaCode"));
         options.setUsingHttpsOnly(json.getBoolean("usingHttpsOnly"));
         options.enableDNSConfig(json.getBoolean("enableDNSConfig"));
-        if (json.has("enableUserInfo")) {
-            options.setEnableUserInfo(json.getBoolean("enableUserInfo"));
-        }
+        // EMOptions#setEnableUserInfo is not available in Android SDK 4.9.0.
         options.setLoadEmptyConversations(json.optBoolean("loadEmptyConversations", false));
         if (json.has("deviceName")) {
             options.setCustomDeviceName(json.optString("deviceName"));
@@ -104,12 +96,7 @@ class OptionsHelper {
             if (json.has("imServer")) {
                 options.setIMServer(json.getString("imServer"));
             }
-            if (json.has("webSocketServer")) {
-                options.setWebSocketServer(json.getString("webSocketServer"));
-            }
-            if (json.has("webSocketPort")) {
-                options.setWebSocketPort(json.getInt("webSocketPort"));
-            }
+            // WebSocket endpoint setters are not available in Android SDK 4.9.0.
             if (json.has("restServer")) {
                 options.setRestServer(json.getString("restServer"));
             }
@@ -195,7 +182,7 @@ class GroupHelper {
         Map<String, Object> data = new HashMap<>();
         CommonUtil.putObjectToMap(data, "groupId", group.getGroupId());
         CommonUtil.putObjectToMap(data, "name", group.getGroupName());
-        CommonUtil.putObjectToMap(data, "avatarUrl", group.getGroupAvatar());
+        CommonUtil.putObjectToMap(data, "avatarUrl", null);
         CommonUtil.putObjectToMap(data, "desc", group.getDescription());
         CommonUtil.putObjectToMap(data, "owner", group.getOwner());
         CommonUtil.putObjectToMap(data, "announcement", group.getAnnouncement());
@@ -212,22 +199,6 @@ class GroupHelper {
         CommonUtil.putObjectToMap(data, "isMemberOnly", group.isMemberOnly());
         CommonUtil.putObjectToMap(data, "isMemberAllowToInvite", group.isMemberAllowToInvite());
         CommonUtil.putObjectToMap(data, "ext", group.getExtension());
-        return data;
-    }
-}
-
-class GroupMemberInfoHelper {
-    static Map<String, Object> toJson(EMGroupMemberInfo info) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("userId", info.getUserId());
-        data.put("memberId", info.getMemberId());
-        data.put("joinedTs", info.getJoinTime());
-        data.put("joinTime", info.getJoinTime());
-        data.put("namecard", info.getNamecard());
-        data.put("nickname", info.getNickname());
-        data.put("avatarUrl", info.getAvatarUrl());
-        data.put("role", EnumTools.groupPermissionTypeToInt(info.getRole()));
-        data.put("string", info.toString());
         return data;
     }
 }
@@ -351,9 +322,9 @@ class ChatRoomHelper {
         data.put("isAllMemberMuted", chatRoom.isAllMemberMuted());
         data.put("announcement", chatRoom.getAnnouncement());
         data.put("permissionType", EnumTools.chatRoomPermissionTypeToInt(chatRoom.getChatRoomPermissionType()));
-        data.put("createTimestamp", chatRoom.getCreateTimestamp());
-        data.put("muteExpireTimestamp", chatRoom.getMuteExpireTimestamp());
-        data.put("isInWhitelist", chatRoom.isInWhitelist());
+        data.put("createTimestamp", 0);
+        data.put("muteExpireTimestamp", 0);
+        data.put("isInWhitelist", false);
 
         return data;
     }
@@ -607,20 +578,6 @@ class MessageHelper {
         // data.put("groupAckCount", message.groupAckCount());
         data.put("isThread", message.isChatThreadMessage());
 
-        EMStreamChunk streamChunk = message.getStreamChunk();
-        if (streamChunk != null) {
-            Map<String, Object> streamChunkData = new HashMap<>();
-            streamChunkData.put("status", streamStatusToInt(streamChunk.getStatus()));
-            streamChunkData.put("errorCode", streamChunk.getErrorCode());
-            streamChunkData.put("finishReason", streamChunk.getFinishReason());
-            streamChunkData.put("text", streamChunk.getText() != null ? streamChunk.getText() : "");
-            String customType = streamChunk.getCustomType();
-            if (customType != null && !customType.isEmpty()) {
-                streamChunkData.put("customType", customType);
-            }
-            data.put("streamChunk", streamChunkData);
-        }
-
         return data;
     }
 
@@ -643,22 +600,6 @@ class MessageHelper {
         }
     }
 
-    private static int streamStatusToInt(EMMessage.EMStreamStatus status) {
-        switch (status) {
-            case START:
-                return 0;
-            case START_AND_COMPLETE:
-                return 1;
-            case PROGRESS:
-                return 2;
-            case COMPLETE:
-                return 3;
-            case ERROR:
-                return 4;
-            default:
-                return 3;
-        }
-    }
 }
 
 class GroupAckHelper {
@@ -913,9 +854,7 @@ class GroupAckHelper {
         if (json.has("sendOriginalImage")){
             body.setSendOriginalImage(json.getBoolean("sendOriginalImage"));
         }
-        if(json.has("isGif")) {
-            body.setGif(json.getBoolean("isGif"));
-        }
+        // EMImageMessageBody#setGif is not available in Android SDK 4.9.0.
 
         if (json.has("fileStatus")){
             body.setDownloadStatus(EnumTools.downloadStatusFromInt(json.getInt("fileStatus")));
@@ -940,7 +879,7 @@ class GroupAckHelper {
         data.put("sendOriginalImage", body.isSendOriginalImage());
         data.put("fileSize", body.getFileSize());
         data.put("type", EnumTools.messageBodyTypeToInt(Type.IMAGE));
-        data.put("isGif", body.isGif());
+        data.put("isGif", false);
         return data;
     }
 
@@ -1231,9 +1170,6 @@ class CursorResultHelper {
                     jsonList.add(ContactHelper.toJson((EMContact) obj));
                 }
 
-                if (obj instanceof EMGroupMemberInfo) {
-                    jsonList.add(GroupMemberInfoHelper.toJson((EMGroupMemberInfo) obj));
-                }
             }
         }
         data.put("list", jsonList);
@@ -1475,9 +1411,7 @@ class FetchHistoryOptionsHelper {
                 String sender = array.getString(i);
                 list.add(sender);
             }
-            if (list.size() > 0) {
-                options.setFromIds(list);
-            }
+            // EMFetchMessageOption#setFromIds is not available in Android SDK 4.9.0.
         }
         if (json.has("msgTypes")){
             List<EMMessage.Type> list = new ArrayList<>();

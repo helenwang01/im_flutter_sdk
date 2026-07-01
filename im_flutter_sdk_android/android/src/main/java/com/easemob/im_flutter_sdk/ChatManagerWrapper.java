@@ -1018,7 +1018,7 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
             }
         }
 
-        EMClient.getInstance().chatManager().asyncModifyMessage(msgId, body, ext, new EMValueWrapperCallBack<EMMessage>(result, channelName) {
+        EMClient.getInstance().chatManager().asyncModifyMessage(msgId, body, new EMValueWrapperCallBack<EMMessage>(result, channelName) {
             @Override
             public void onSuccess(EMMessage object) {
                 updateObject(MessageHelper.toJson(object));
@@ -1159,15 +1159,6 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
                     msgList.add(MessageHelper.toJson(message));
                 }
                 post(() -> channel.invokeMethod(MethodKey.onMessagesReceived, msgList));
-            }
-
-            @Override
-            public void onStreamMessageReceived(List<EMMessage> messages) {
-                ArrayList<Map<String, Object>> msgList = new ArrayList<>();
-                for (EMMessage message : messages) {
-                    msgList.add(MessageHelper.toJson(message));
-                }
-                post(() -> channel.invokeMethod(MethodKey.onStreamMessagesReceived, msgList));
             }
 
             @Override
@@ -1314,12 +1305,7 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
 
     // 4.10
     private void getMessageCount(JSONObject params, String channelName, Result result) throws JSONException {
-        EMClient.getInstance().chatManager().asyncGetMessageCount(new EMValueWrapperCallBack<Integer>(result, channelName){
-            @Override
-            public void onSuccess(Integer object) {
-                updateObject(object);
-            }
-        } );
+        onError(result, new HyphenateException(1, channelName + " is not supported by Android SDK 4.9.0"));
     }
 
     // 4.15.2
@@ -1336,43 +1322,11 @@ public class ChatManagerWrapper extends Wrapper implements MethodCallHandler {
         EMConversation.EMSearchDirection direction = EnumTools.searchDirectionFromInt(params.getInt("direction"));
         EMConversation.EMMessageSearchScope scope = EMConversation.EMMessageSearchScope.values()[params.getInt("scope")];
 
-        EMClient.getInstance().chatManager().asyncLoadConversationMessagesWithKeyword(
-            keyword, 
-            timestamp, 
-            sender, 
-            direction, 
-            scope,
-            new EMValueWrapperCallBack<Map<String, List<String>>>(result, channelName) {
-                @Override
-                public void onSuccess(Map<String, List<String>> object) {
-                    Map<String, Object> resultMap = new HashMap<>();
-                    for (Map.Entry<String, List<String>> entry : object.entrySet()) {
-                        resultMap.put(entry.getKey(), entry.getValue());
-                    }
-                    updateObject(resultMap);
-                }
-            }
-        );
+        onError(result, new HyphenateException(1, channelName + " is not supported by Android SDK 4.9.0"));
     }
 
     private void loadMessagesWithIds(JSONObject params, String channelName, Result result) throws JSONException {
-        JSONArray jsonArray = params.getJSONArray("messageIds");
-        ArrayList<String> messageIds = new ArrayList<>();
-        for (int i = 0; i < jsonArray.length(); i++) {
-            messageIds.add(jsonArray.getString(i));
-        }
-        String conversationId = params.getString("conversationId");
-
-        EMClient.getInstance().chatManager().asyncLoadMessages(messageIds, conversationId, new EMValueWrapperCallBack<List<EMMessage>>(result, channelName) {
-            @Override
-            public void onSuccess(List<EMMessage> object) {
-                List<Map> messages = new ArrayList<>();
-                for (EMMessage msg : object) {
-                    messages.add(MessageHelper.toJson(msg));
-                }
-                updateObject(messages);
-            }
-        });
+        onError(result, new HyphenateException(1, channelName + " is not supported by Android SDK 4.9.0"));
     }
 
 }
