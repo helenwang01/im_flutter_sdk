@@ -16,8 +16,9 @@ import pytest
 # 保证能 import src
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.tools.config import get_default_topic, get_topic, get_rest_auth_token
-from src.rest_api.user_api import create_users, delete_user
+from src.tools.config import get_default_topic, get_topic, get_test_accounts
+from src.rest_api.token_api import fetch_login_token
+from src.rest_api.user_api import create_users
 from src.tools.ws_client import (
     request as ws_request,
     request_and_wait_for_event as ws_request_and_wait_event,
@@ -27,12 +28,8 @@ from src.tools.ws_client import (
 from src.tools import assertions
 from src import Cmd
 
-# 未配置 REST 用户管理时的回退账号（仅当不创建用户时使用）
-SESSION_FALLBACK_USER_A = "test0318user1"
-SESSION_FALLBACK_USER_B = "test0318user2"
-SESSION_FALLBACK_USER_C = "test0318user3"
+# 5.0 已删除密码登录，测试登录统一先从业务接口换 token，再走 loginWithToken。
 SESSION_PWD = "1"
-_LAST_CREATE_USERS_ERROR = ""
 
 
 # ----- Allure 工具 -----
@@ -85,91 +82,29 @@ def _drain_all_callbacks_before_cases(device: str, idle_timeout: float = 2.0, ma
 
 # ----- Session 登录 / 登出（抽出为独立函数，结构清晰） -----
 
+def login_with_token(device, username: str, password: str = SESSION_PWD) -> dict:
+    """使用业务 token 登录。5.0 不再使用密码登录。"""
+    token = fetch_login_token(username, password)
+    return device.call(
+        "Client",
+        Cmd.login.value,
+        info={"userId": username, "pwdOrToken": token, "isPassword": False},
+    )
+
+
 def _session_login(
     device_a,
     device_b,
     user_a: str,
     user_b: str,
-    password: str = "1",
+    password: str = SESSION_PWD,
 ) -> None:
     """
     所有 test_* cases 执行前调用一次：deviceA 以 user_a、deviceB 以 user_b 登录，并清空该连接上的回调。
     """
-    def _do_login():
-        ra = device_a.call(
-            "Client", Cmd.login.value,
-            info={"userId": user_a, "pwdOrToken": password, "isPassword": True},
-        )
-        rb = device_b.call(
-            "Client", Cmd.login.value,
-            info={"userId": user_b, "pwdOrToken": password, "isPassword": True},
-        )
-        return ra, rb
-
-    def _need_create_user(r: dict) -> bool:
-        result = r.get("result")
-        if result is None:
-            return True
-        if result == "" or result == {}:
-            return True
-        if isinstance(result, dict):
-            code = result.get("code")
-            desc = str(result.get("description", ""))
-            if code == 204:
-                return True
-            if "User does not exist" in desc:
-                return True
-        return False
-
-    with _allure_step("Session 登录"):
-        has_rest_token = bool(get_rest_auth_token())
-        # 仅在未配置 REST token 时，走 WS createAccount 预创建
-        if not has_rest_token:
-            try:
-                _, _, user_c = _test_usernames()
-                for uid in (user_a, user_b, user_c):
-                    create_resp = device_a.call(
-                        "Client",
-                        Cmd.createAccount.value,
-                        info={"userId": uid, "password": password},
-                    )
-                    _attach_request_response_allure(
-                        "WS createAccount warmup",
-                        {
-                            "manager": "Client",
-                            "cmd": Cmd.createAccount.value,
-                            "info": {"userId": uid, "password": "***"},
-                        },
-                        create_resp,
-                    )
-            except Exception:
-                pass
-        resp_a, resp_b = _do_login()
-
-        # 仅在未配置 REST token 时，允许 WS createAccount 兜底
-        if (not has_rest_token) and (_need_create_user(resp_a) or _need_create_user(resp_b)):
-            try:
-                for uid in (user_a, user_b):
-                    create_resp = device_a.call(
-                        "Client",
-                        Cmd.createAccount.value,
-                        info={"userId": uid, "password": password},
-                    )
-                    _attach_request_response_allure(
-                        "WS createAccount fallback",
-                        {"manager": "Client", "cmd": Cmd.createAccount.value, "info": {"userId": uid, "password": "***"}},
-                        create_resp,
-                    )
-                # user_c 也补齐，避免后续 group/member 场景再触发不存在
-                try:
-                    _, _, user_c = _test_usernames()
-                    device_a.call("Client", Cmd.createAccount.value, info={"userId": user_c, "password": password})
-                except Exception:
-                    pass
-                resp_a, resp_b = _do_login()
-            except Exception:
-                # fallback 失败时沿用原登录结果，由下方统一报错
-                pass
+    with _allure_step("Session token 登录"):
+        resp_a = login_with_token(device_a, user_a, password)
+        resp_b = login_with_token(device_b, user_b, password)
 
         def _ok(r: dict) -> bool:
             res = r.get("result")
@@ -186,20 +121,17 @@ def _session_login(
                 if code is None or int(code) == 200:
                     return True
             return False
+
         if not (_ok(resp_a) and _ok(resp_b)):
             import pytest as _pytest
-            extra = ""
-            if _LAST_CREATE_USERS_ERROR:
-                extra = f"\n4) REST 自动创建用户失败详情：\n{_LAST_CREATE_USERS_ERROR}\n"
             _pytest.exit(
                 "登录失败，已中止本次用例执行。\n"
                 f"deviceA: {resp_a}\n"
                 f"deviceB: {resp_b}\n"
                 "排查建议：\n"
-                "1) 确认被测端已创建当天用户名（tests/conftest.py 中 testMMDDuser1/2/3），或在 config.yaml 的 rest_api.auth_token 中配置 token 以自动创建。\n"
-                "2) 检查 config.yaml.websocket.base_url 与 topics 是否指向在线集成端。\n"
-                "3) 若使用网关鉴权，确认 token/APPKEY 正确。\n"
-                f"{extra}"
+                "1) 确认 config.yaml 的 test_accounts 指向 token 接口可换取 token 的账号，默认 tst01/tst02/tst03。\n"
+                "2) 检查 rest_api.base_url（会拼接 /token）、rest_api.token_ttl 与账号密码是否正确。\n"
+                "3) 检查 config.yaml.websocket.base_url 与 topics 是否指向在线集成端。\n"
             )
 
     device_a.drain_events()
@@ -214,7 +146,6 @@ def _session_login(
         device_b.call("Client", Cmd.startCallback.value, info={})
     except Exception:
         pass
-
 
 def _session_logout(device_a, device_b) -> None:
     """
@@ -350,68 +281,27 @@ def api_device_b():
 
 
 def _test_usernames() -> tuple[str, str, str]:
-    """生成测试用例用的两个用户名：test + 月日 + user1/user2。"""
-    from datetime import datetime
-    mmdd = datetime.now().strftime("%m%d")
-    return f"test{mmdd}user1", f"test{mmdd}user2", f"test{mmdd}user3"
+    """返回固定测试账号，默认 tst01/tst02/tst03，可由 config.yaml 覆盖。"""
+    accounts = get_test_accounts()
+    return accounts["user_a"], accounts["user_b"], accounts["user_c"]
 
 
 @pytest.fixture(scope="session")
 def created_test_users():
     """
-    Session 内创建两名用户供所有测试用例使用，teardown 时删除。
-    若未配置 REST auth_token（config.yaml -> rest_api.auth_token），则不创建/不删除，直接使用日期用户名。
-    返回 (user_a, user_b)。
+    Session 内使用固定测试账号，并在 token 登录前通过 REST 确保账号存在。
+    SDK 5.0 已删除客户端创建账号和密码登录；测试侧先造号，再换 token 登录。
     """
-    global _LAST_CREATE_USERS_ERROR
-    _LAST_CREATE_USERS_ERROR = ""
-    token = get_rest_auth_token()
-    # 优先使用日期用户名，避免固定回退账号与被测端不一致
-    user_a, user_b, user_c = _test_usernames()
-    if not token:
-        # 无 REST token：直接使用日期用户名，不创建
-        yield user_a, user_b, user_c
-        return
-    with _allure_step("创建测试用户"):
-        create_resp = create_users([
-            {"username": user_a, "password": SESSION_PWD},
-            {"username": user_b, "password": SESSION_PWD},
-            {"username": user_c, "password": SESSION_PWD},
-        ])
+    users = _test_usernames()
+    with _allure_step("创建/确认测试用户"):
+        create_resp = create_users([{"username": user, "password": SESSION_PWD} for user in users])
     if isinstance(create_resp, dict) and create_resp.get("error"):
-        _LAST_CREATE_USERS_ERROR = json.dumps(create_resp, ensure_ascii=False, indent=2, default=str)
-        print(
-            "[created_test_users] REST 自动创建用户失败，已降级为直接使用日期用户名。\n"
-            f"{_LAST_CREATE_USERS_ERROR}",
-            file=sys.stderr,
-            flush=True,
+        pytest.exit(
+            "创建/确认测试用户失败，已中止本次用例执行。\n"
+            f"{json.dumps(create_resp, ensure_ascii=False, indent=2, default=str)}\n"
+            "排查建议：确认 config.yaml 的 rest_api.base_url 与 rest_api.auth_token 可创建测试账号。",
         )
-        try:
-            import allure
-            allure.attach(
-                _LAST_CREATE_USERS_ERROR,
-                "创建用户失败，降级使用日期用户名",
-                allure.attachment_type.TEXT,
-            )
-        except ImportError:
-            pass
-        created = False
-    else:
-        created = True
-    try:
-        yield user_a, user_b, user_c
-    finally:
-        if created:
-            with _allure_step("删除测试用户"):
-                for u in (user_a, user_b, user_c):
-                    try:
-                        delete_user(u)
-                    except Exception as e:
-                        try:
-                            import allure
-                            allure.attach(str(e), f"删除用户 {u}", allure.attachment_type.TEXT)
-                        except ImportError:
-                            pass
+    yield users
 
 
 @pytest.fixture(scope="session")

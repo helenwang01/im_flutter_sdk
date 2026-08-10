@@ -10,8 +10,15 @@ topics:
   deviceA: adc
   deviceB: adc01
 
-# REST 用户管理（创建/删除用户，用于 presence 等用例的临时账号）
+# REST 用户管理（创建/删除用户）与登录 token 换取（{base_url}/token）
 rest_api:
   base_url: "http://a1.easemob.com/easemob-demo/wang"
   auth_token: "Bearer <YOUR_TOKEN_HERE>"
   verify_ssl: false  # 临时绕过证书校验（仅测试环境使用）
+  token_ttl: 6000000  # 可选；登录换 token 的 ttl，默认 6000000
+
+# 固定测试账号。SDK 5.0 已删除客户端创建账号和密码登录，账号需提前由业务服务端维护。
+test_accounts:
+  user_a: tst01
+  user_b: tst02
+  user_c: tst03

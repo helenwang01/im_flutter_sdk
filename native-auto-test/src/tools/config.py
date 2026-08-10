@@ -82,3 +82,32 @@ def get_rest_verify_ssl() -> bool:
     cfg = load_config()
     rest = cfg.get("rest_api") or {}
     return bool(rest.get("verify_ssl", True))
+
+
+def get_token_api_url() -> str:
+    """
+    Token 换取接口 URL。
+    由 config.yaml -> rest_api.base_url 拼接 /token 得到。
+    """
+    base = get_rest_base_url().rstrip("/")
+    if not base:
+        raise RuntimeError("config.yaml 缺少 rest_api.base_url，无法拼接登录 token 接口")
+    return f"{base}/token"
+
+
+def get_token_api_ttl() -> int:
+    """Token TTL。优先读 rest_api.token_ttl，默认 6000000。"""
+    cfg = load_config()
+    rest = cfg.get("rest_api") or {}
+    return int(rest.get("token_ttl", 6000000))
+
+
+def get_test_accounts() -> dict[str, str]:
+    """固定测试账号映射。未配置时回退到 tst01/tst02/tst03。"""
+    cfg = load_config()
+    accounts = cfg.get("test_accounts") or {}
+    return {
+        "user_a": str(accounts.get("user_a") or "tst01"),
+        "user_b": str(accounts.get("user_b") or "tst02"),
+        "user_c": str(accounts.get("user_c") or "tst03"),
+    }

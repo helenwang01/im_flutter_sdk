@@ -26,6 +26,7 @@ class Cmd(str, Enum):
     getCurrentDeviceId = "getCurrentDeviceId"
     isLoggedInBefore = "isLoggedInBefore"
     isConnected = "isConnected"
+    isDatabaseOpened = "isDatabaseOpened"
 
     # ----- EMClient listener (callback keys) -----
     onMultiDeviceGroupEvent = "onMultiDeviceGroupEvent"
@@ -46,6 +47,9 @@ class Cmd(str, Enum):
     onTokenWillExpire = "onTokenWillExpire"
     onTokenDidExpire = "onTokenDidExpire"
     onAppActiveNumberReachLimit = "onAppActiveNumberReachLimit"
+    onDataSyncStart = "onDataSyncStart"
+    onDataSyncFinish = "onDataSyncFinish"
+    onDatabaseOpened = "onDatabaseOpened"
 
     # ----- EMContactManager -----
     addContact = "addContact"
@@ -75,6 +79,9 @@ class Cmd(str, Enum):
     ackMessageRead = "ackMessageRead"
     ackGroupMessageRead = "ackGroupMessageRead"
     ackConversationRead = "ackConversationRead"
+    sendMessageReadReceipts = "sendMessageReadReceipts"
+    clearConversationUnreadMessageCount = "clearConversationUnreadMessageCount"
+    clearAllConversationUnreadMessageCount = "clearAllConversationUnreadMessageCount"
     recallMessage = "recallMessage"
     getConversation = "getConversation"
     getThreadConversation = "getThreadConversation"
@@ -95,6 +102,8 @@ class Cmd(str, Enum):
     searchChatMsgFromDB = "searchChatMsgFromDB"
     getMessage = "getMessage"
     asyncFetchGroupAcks = "asyncFetchGroupAcks"
+    getGroupMessageReadReceipts = "getGroupMessageReadReceipts"
+    fetchGroupMessageReadReceipts = "fetchGroupMessageReadReceipts"
     deleteRemoteConversation = "deleteRemoteConversation"
     deleteMessagesBeforeTimestamp = "deleteMessagesBeforeTimestamp"
     translateMessage = "translateMessage"
@@ -116,6 +125,7 @@ class Cmd(str, Enum):
     onStreamMessagesReceived = "onStreamMessagesReceived"
     onCmdMessagesReceived = "onCmdMessagesReceived"
     onMessagesRead = "onMessagesRead"
+    onMessageReadReceipts = "onMessageReadReceipts"
     onReadAckForGroupMessageUpdated = "onReadAckForGroupMessageUpdated"
     onGroupMessageRead = "onGroupMessageRead"
     onMessagesDelivered = "onMessagesDelivered"
@@ -231,6 +241,7 @@ class Cmd(str, Enum):
     removeGroupSharedFile = "removeGroupSharedFile"
     updateGroupAnnouncement = "updateGroupAnnouncement"
     updateGroupExt = "updateGroupExt"
+    updateGroupOptions = "updateGroupOptions"
     joinPublicGroup = "joinPublicGroup"
     requestToJoinPublicGroup = "requestToJoinPublicGroup"
     acceptJoinApplication = "acceptJoinApplication"

@@ -139,5 +139,14 @@
 37. 无（当前专项未定义独立错误入参路径）。
     该专项聚焦同步行为验证，不覆盖参数异常。
 
+## getAllContactsFromDB
+
+正常 cases
+38. `tests/contact/test_contact_5_0_sync_local_cache.py::test_contact_5_0_sync_then_read_contacts_from_local_db`
+    SDK 5.0 推荐路径：建立好友关系后读取本地 DB 联系人列表，验证本地接口返回列表结构，并用服务端联系人列表严格确认目标好友关系。
+
+异常 cases
+39. 无（当前 session fixture 默认已登录且数据库已打开，未覆盖未登录/未开库异常）。
+
 ## 统计
-- 当前记录 case 条目总数：`37`
+- 当前记录 case 条目总数：`39`

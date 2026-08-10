@@ -25,5 +25,23 @@
 4. 无（当前测试集中未单独覆盖该 API 的异常入参）。
    说明：该 API 目前仅在已登录上下文使用，未单测非法登录态或参数异常路径。
 
+## isDatabaseOpened
+
+正常 cases
+5. `tests/client/test_client_5_0_api.py::test_client_is_database_opened_after_session_login`
+   SDK 5.0 登录后查询数据库打开状态，验证公开 API 返回稳定 bool，供消费侧判断本地 DB 是否可读取。
+
+异常 cases
+6. 无（当前 session fixture 默认已登录，未覆盖未登录态数据库状态）。
+
+## onDataSyncStart / onDataSyncFinish / onDatabaseOpened
+
+正常 cases
+7. `tests/client/test_client_5_0_api.py::test_client_5_0_data_sync_and_database_callbacks_shape`
+   SDK 5.0 数据同步与数据库打开回调经 EventBridge 透传时，校验 `type/errorCode/userId` 字段结构稳定；不同 dataSyncTypes 配置下允许回调不出现。
+
+异常 cases
+8. 无（回调类 API 当前仅验证结构，不构造异常事件）。
+
 ## 统计
-- 当前记录 case 条目总数：`4`
+- 当前记录 case 条目总数：`8`

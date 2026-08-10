@@ -86,7 +86,7 @@ def _post_create_single_user(base_url: str, token: str, user: dict[str, str]) ->
         headers={
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization": f"{token}",
+            "Authorization": token,
         },
     )
     try:
@@ -163,7 +163,7 @@ def create_users(users: list[dict[str, str]]) -> dict:
     失败时不抛异常，打印错误后返回 {"error": ...}。
     """
     base = get_rest_base_url().rstrip("/")
-    token = get_rest_auth_token()
+    token = _authorization_header()
     if not base or not token:
         err = "rest_api.base_url 与 auth_token 需在 config.yaml 的 rest_api 中配置"
         print(f"[create_users] {err}", file=sys.stderr, flush=True)
@@ -177,7 +177,7 @@ def create_users(users: list[dict[str, str]]) -> dict:
         headers={
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization": f"{token}",
+            "Authorization": token,
         },
     )
     debug_headers = {
@@ -277,7 +277,7 @@ def create_users(users: list[dict[str, str]]) -> dict:
 def delete_user(username: str) -> None:
     """删除指定用户。"""
     base = get_rest_base_url().rstrip("/")
-    token = get_rest_auth_token()
+    token = _authorization_header()
     if not base or not token:
         raise RuntimeError("rest_api.base_url 与 auth_token 需在 config.yaml 的 rest_api 中配置")
     url = f"{base}/users/{urllib.request.quote(username, safe='')}"
@@ -286,7 +286,7 @@ def delete_user(username: str) -> None:
         method="DELETE",
         headers={
             "Accept": "application/json",
-            "Authorization": f"{token}",
+            "Authorization": token,
         },
     )
     try:

@@ -70,3 +70,63 @@ def get_user_contacts(
     except urllib.error.HTTPError as e:
         body = e.read().decode() if e.fp else ""
         raise RuntimeError(f"查询好友列表失败 HTTP {e.code}: {body}") from e
+
+
+def add_user_contact(username: str, friend_username: str) -> dict:
+    """通过 REST 直接建立好友关系。"""
+    base = get_rest_base_url().rstrip("/")
+    auth = _authorization_header()
+    if not base or not auth:
+        raise RuntimeError("rest_api.base_url 与 auth_token 需在 config.yaml 的 rest_api 中配置")
+
+    user_enc = urllib.parse.quote(username, safe="")
+    friend_enc = urllib.parse.quote(friend_username, safe="")
+    url = f"{base}/users/{user_enc}/contacts/users/{friend_enc}"
+    req = urllib.request.Request(
+        url,
+        method="POST",
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+    )
+    try:
+        with _urlopen(req, timeout=30) as resp:
+            raw = resp.read().decode()
+            return json.loads(raw) if raw.strip() else {}
+    except urllib.error.HTTPError as e:
+        body = e.read().decode() if e.fp else ""
+        if e.code in (400, 409) and ("duplicate" in body.lower() or "already" in body.lower()):
+            return {"ok": True, "existing": True, "body": body}
+        raise RuntimeError(f"添加好友失败 HTTP {e.code}: {body}") from e
+
+
+def import_user_contacts(username: str, friend_usernames: list[str]) -> dict:
+    """通过 REST 批量导入好友关系，不需要对端登录或同意好友请求。"""
+    base = get_rest_base_url().rstrip("/")
+    auth = _authorization_header()
+    if not base or not auth:
+        raise RuntimeError("rest_api.base_url 与 auth_token 需在 config.yaml 的 rest_api 中配置")
+
+    user_enc = urllib.parse.quote(username, safe="")
+    url = f"{base}/users/{user_enc}/contacts/import"
+    req = urllib.request.Request(
+        url,
+        data=json.dumps({"usernames": friend_usernames}).encode("utf-8"),
+        method="POST",
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+    )
+    try:
+        with _urlopen(req, timeout=30) as resp:
+            raw = resp.read().decode()
+            return json.loads(raw) if raw.strip() else {}
+    except urllib.error.HTTPError as e:
+        body = e.read().decode() if e.fp else ""
+        if e.code in (400, 409) and ("duplicate" in body.lower() or "already" in body.lower()):
+            return {"ok": True, "existing": True, "body": body}
+        raise RuntimeError(f"批量导入好友失败 HTTP {e.code}: {body}") from e

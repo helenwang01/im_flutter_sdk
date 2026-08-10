@@ -24,6 +24,8 @@
    先制造未读再读取计数并清零，验证未读数变化链路正确。
 5. `tests/chat/test_chat_s1_local_conversation.py::test_chat_mark_all_as_read_idempotent`
    连续执行全部已读操作，验证重复调用幂等且不引入副作用。
+108. `tests/chat/test_chat_5_0_unread_and_receipts.py::test_chat_5_0_clear_single_conversation_unread_count`
+   SDK 5.0 下验证 `Conversation.markAllMessagesAsRead` 已适配为清除指定会话未读数，清除前后本地未读数从 1 变为 0。
 
 异常 cases
 6. 无（当前未单独覆盖错误入参）。
@@ -62,6 +64,8 @@
    发送图片消息，校验图片消息体字段与接收事件一致。
 18. `tests/chat/test_chat_send_with_type.py::test_send_message_with_type_video`
    发送视频消息，校验视频类型消息在双端链路可用。
+109. `tests/chat/test_chat_5_0_unread_and_receipts.py::test_chat_5_0_message_read_receipt_fields_round_trip`
+   SDK 5.0 下发送需回执文本消息，验证 Flutter 兼容字段 `needGroupAck/hasReadAck/groupAckCount` 与底层消息级回执模型映射稳定。
 
 异常 cases
 19. `tests/chat/test_chat.py::test_chat_send_to_self_should_not_succeed`
@@ -346,4 +350,4 @@
    传空 `messageIds`，冻结返回空列表语义。
 
 ## 统计
-- 当前记录 case 条目总数：`107`
+- 当前记录 case 条目总数：`109`

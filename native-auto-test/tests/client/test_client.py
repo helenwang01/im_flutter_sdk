@@ -10,20 +10,21 @@ import pytest
 
 from src.tools import assertions
 from src import Cmd
+from tests.conftest import login_with_token
 
 
 pytestmark = [pytest.mark.client]
 
 
-def test_client_login_invalid_password(api, assert_api):
-    """错误密码：预期返回错误响应；若服务端仅返回 result=None 也视为合法响应。"""
+def test_client_login_invalid_token(api, assert_api, user_a):
+    """错误 token：预期返回错误响应；若服务端仅返回 result=None 也视为合法响应。"""
     resp = api.call(
         "Client",
         Cmd.login.value,
         info={
-            "userId": "nonexistent_user_xyz",
-            "pwdOrToken": "wrong_pwd",
-            "isPassword": True,
+            "userId": user_a,
+            "pwdOrToken": "wrong_token",
+            "isPassword": False,
         },
     )
     # 响应中要么有 result（成功），要么有 error（失败）
@@ -41,13 +42,9 @@ def test_client_get_current_user(device_a, assert_api):
     assert result is not None or "result" in resp
 
 
-def test_login_then_receive_offline_sync_event(device_a, assert_api):
+def test_login_then_receive_offline_sync_event(device_a, assert_api, user_a):
     """deviceA 登录后接收 onOfflineMessageSyncStart：用 device_a 发请求并在同一 topic 上主动收推送。"""
-    resp = device_a.call(
-        "Client",
-        Cmd.login.value,
-        info={"userId": "TSt", "pwdOrToken": "1", "isPassword": True},
-    )
+    resp = login_with_token(device_a, user_a)
     print("登录响应:", json.dumps(resp))
     assert_api.assert_success(resp)
     event = device_a.receive_message(

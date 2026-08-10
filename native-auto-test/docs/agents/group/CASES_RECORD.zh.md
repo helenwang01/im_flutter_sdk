@@ -64,19 +64,23 @@
 正常 cases
 16. `tests/group/test_group_joined_groups.py::test_group_get_joined_groups_local_contains_created_group`
     创建群后拉取本地已加入群列表，校验包含目标群且 `groupId/owner/name` 一致。
+17. `tests/group/test_second_channel_joined_groups.py::test_second_channel_joined_groups_sync_then_read_local_list`
+    SDK 5.0 推荐路径：已加入群组通过第二通道同步落库后，读取本地 `getJoinedGroups` 并校验目标群。
+18. `tests/group/test_second_channel_joined_groups.py::test_second_channel_joined_groups_group_item_has_required_fields`
+    第二通道 GroupItem 消费侧字段校验，验证本地群对象包含 `groupId/name/owner/memberCount/permissionType/desc` 等关键字段。
 
 异常 cases
-17. `tests/group/test_group_exceptions_joined_groups.py::test_group_get_joined_groups_with_extra_info_fields`
+19. `tests/group/test_group_exceptions_joined_groups.py::test_group_get_joined_groups_with_extra_info_fields`
     传入无关参数与边界分页字段，冻结当前端“忽略无关参数并返回稳定列表结构”语义。
 
 ## getJoinedGroupsFromServer
 
 正常 cases
-18. `tests/group/test_group_joined_groups.py::test_group_get_joined_groups_from_server_contains_created_group`
+20. `tests/group/test_group_joined_groups.py::test_group_get_joined_groups_from_server_contains_created_group`
     创建群后拉取服务端已加入群列表，校验包含目标群且核心字段一致。
 
 异常 cases
-19. `tests/group/test_group_exceptions_joined_groups.py::test_group_get_joined_groups_from_server_with_extra_info_fields`
+21. `tests/group/test_group_exceptions_joined_groups.py::test_group_get_joined_groups_from_server_with_extra_info_fields`
     传入无关参数与边界分页字段，冻结当前端“忽略无关参数并返回稳定列表结构”语义。
 
 ## getPublicGroupsFromServer
@@ -525,5 +529,23 @@
 130. `tests/group/test_group_moderation.py::test_group_moderation_nonexistent_group_errors[updateGroupExt-info6-600-do not find this group]`
      对不存在群执行 updateGroupExt，冻结 `600/do not find this group` 错误语义。
 
+## fetchGroupMembersInfo
+
+正常 cases
+131. `tests/group/test_group_5_0_member_info_and_avatar.py::test_group_5_0_fetch_group_members_info_owner_fields`
+     SDK 5.0 获取群成员信息游标列表，验证群主成员的 `userId/joinedTs/role` 字段可读取且结构稳定。
+
+异常 cases
+无（当前批次仅覆盖 5.0 新增成功链路，异常入参后续补充）。
+
+## updateGroupAvatar
+
+正常 cases
+132. `tests/group/test_group_5_0_member_info_and_avatar.py::test_group_5_0_update_group_avatar_then_read_local_group`
+     SDK 5.0 群主更新群头像，校验接口返回对象和本地 `getGroupWithId` 均体现最新 `avatarUrl`。
+
+异常 cases
+无（当前批次仅覆盖群主成功更新链路，权限与非法群 ID 后续补充）。
+
 ## 统计
-- 当前记录 case 条目总数：`130`
+- 当前记录 case 条目总数：`132`

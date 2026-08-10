@@ -17,6 +17,7 @@ import pytest
 from src import Cmd
 from src.test_flow import ContactTestFlow
 from src.rest_api.user_api import update_user_metadata
+from tests.conftest import login_with_token
 
 
 pytestmark = [pytest.mark.client, pytest.mark.contact]
@@ -49,21 +50,9 @@ def test_friend_info_auto_sync_after_login(device_a, device_b, assert_api, user_
     device_a.drain_events(timeout=1.0)
     device_b.drain_events(timeout=1.0)
 
-    assert_api.assert_success(
-        device_a.call(
-            "Client",
-            Cmd.login.value,
-            info={"userId": user_a, "pwdOrToken": "1", "isPassword": True},
-        )
-    )
+    assert_api.assert_success(login_with_token(device_a, user_a))
     _wait_friend_sync_events(device_a)
-    assert_api.assert_success(
-        device_b.call(
-            "Client",
-            Cmd.login.value,
-            info={"userId": user_b, "pwdOrToken": "1", "isPassword": True},
-        )
-    )
+    assert_api.assert_success(login_with_token(device_b, user_b))
     _wait_friend_sync_events(device_b)
 
 
